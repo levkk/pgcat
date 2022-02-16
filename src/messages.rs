@@ -185,6 +185,32 @@ pub async fn custom_protocol_response_ok(
     write_all_half(stream, res).await
 }
 
+/// Pooler is shutting down
+/// Codes: https://www.postgresql.org/docs/12/errcodes-appendix.html
+///
+/// TODO: send this when we are shutting down, i.e. implement Tokio graceful shutdown
+/// Docs: https://tokio.rs/tokio/topics/shutdown
+#[allow(dead_code)]
+pub async fn shutting_down(stream: &mut OwnedWriteHalf) -> Result<(), Error> {
+    let mut notice = BytesMut::with_capacity(50);
+
+    notice.put_u8(b'S');
+    notice.put_slice(&b"FATAL\0"[..]);
+    notice.put_u8(b'V');
+    notice.put_slice(&b"FATAL\0"[..]);
+    notice.put_u8(b'C');
+    notice.put_slice(&b"57P01\0"[..]); // Admin shutdown, see Appendix A.
+    notice.put_u8(b'M');
+    notice.put_slice(&b"terminating connection due to administrator command"[..]);
+
+    let mut res = BytesMut::with_capacity(notice.len() + 5);
+    res.put_u8(b'N');
+    res.put_i32(res.len() as i32 + 4);
+    res.put(notice);
+
+    Ok(write_all_half(stream, res).await?)
+}
+
 /// Write all data in the buffer to the TcpStream.
 pub async fn write_all(stream: &mut TcpStream, buf: BytesMut) -> Result<(), Error> {
     match stream.write_all(&buf).await {
