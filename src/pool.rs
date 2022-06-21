@@ -10,6 +10,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::config::{get_config, Address, Role, User};
+use crate::constants::DEFAULT_SEARCH_PATH;
 use crate::errors::Error;
 use crate::server::Server;
 use crate::stats::Reporter;
@@ -81,6 +82,7 @@ impl ConnectionPool {
                     address.clone(),
                     config.user.clone(),
                     &shard.database,
+                    &shard.search_path,
                     client_server_map.clone(),
                     stats.clone(),
                 );
@@ -253,6 +255,11 @@ impl ConnectionPool {
                 // Check if health check succeeded.
                 Ok(res) => match res {
                     Ok(_) => {
+                        // Set search path
+                        if server.search_path() != DEFAULT_SEARCH_PATH {
+                            server.reset_search_path().await?;
+                        }
+
                         self.stats
                             .checkout_time(now.elapsed().as_micros(), process_id, address.id);
                         self.stats.server_idle(conn.process_id(), address.id);
@@ -397,6 +404,7 @@ pub struct ServerPool {
     address: Address,
     user: User,
     database: String,
+    schema: String,
     client_server_map: ClientServerMap,
     stats: Reporter,
 }
@@ -406,6 +414,7 @@ impl ServerPool {
         address: Address,
         user: User,
         database: &str,
+        schema: &str,
         client_server_map: ClientServerMap,
         stats: Reporter,
     ) -> ServerPool {
@@ -413,6 +422,7 @@ impl ServerPool {
             address: address,
             user: user,
             database: database.to_string(),
+            schema: schema.to_string(),
             client_server_map: client_server_map,
             stats: stats,
         }
@@ -442,6 +452,7 @@ impl ManageConnection for ServerPool {
             &self.address,
             &self.user,
             &self.database,
+            &self.schema,
             self.client_server_map.clone(),
             self.stats.clone(),
         )

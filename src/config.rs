@@ -130,6 +130,7 @@ impl Default for General {
 pub struct Shard {
     pub servers: Vec<(String, u16, String)>,
     pub database: String,
+    pub search_path: String,
 }
 
 impl Default for Shard {
@@ -137,6 +138,7 @@ impl Default for Shard {
         Shard {
             servers: vec![(String::from("localhost"), 5432, String::from("primary"))],
             database: String::from("postgres"),
+            search_path: String::from("\"$user\",public"),
         }
     }
 }
@@ -289,6 +291,16 @@ pub async fn parse(path: &str) -> Result<(), Error> {
 
     // Quick config sanity check.
     for shard in &config.shards {
+        if shard.1.search_path.contains(" ") {
+            // Technically spaces are allowed in the identifier is quoted, but I don't want to
+            // handle that yet...or ever?
+            error!(
+                "`search_path` for shard '{}' contains spaces; spaces are not allowed",
+                shard.0
+            );
+            return Err(Error::BadConfig);
+        }
+
         // We use addresses as unique identifiers,
         // let's make sure they are unique in the config as well.
         let mut dup_check = HashSet::new();

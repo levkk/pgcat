@@ -51,6 +51,7 @@ servers = [
 ]
 # Database name (e.g. "postgres")
 database = "shard0"
+search_path = "\"$user\",public,shard_0"
 
 [shards.1]
 # [ host, port, role ]
@@ -60,6 +61,7 @@ servers = [
     # [ "127.0.1.1", 5432, "replica" ],
 ]
 database = "shard1"
+search_path = "\"$user\",public,shard_1"
 
 [shards.2]
 # [ host, port, role ]
@@ -69,6 +71,7 @@ servers = [
     # [ "127.0.1.1", 5432, "replica" ],
 ]
 database = "shard2"
+search_path = "\"$user\",public,shard_2"
 
 
 # Settings for our query routing layer.

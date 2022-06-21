@@ -31,3 +31,6 @@ pub const MESSAGE_TERMINATOR: u8 = 0;
 // Data types
 //
 pub const _OID_INT8: i32 = 20; // bigint
+
+// Default search_path in Postgres
+pub const DEFAULT_SEARCH_PATH: &str = "\"$user\",public";

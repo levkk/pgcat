@@ -58,6 +58,9 @@ pub struct Server {
 
     /// Application name using the server at the moment.
     application_name: String,
+
+    /// Search path
+    search_path: String,
 }
 
 impl Server {
@@ -67,6 +70,7 @@ impl Server {
         address: &Address,
         user: &User,
         database: &str,
+        search_path: &str,
         client_server_map: ClientServerMap,
         stats: Reporter,
     ) -> Result<Server, Error> {
@@ -316,6 +320,7 @@ impl Server {
                         connected_at: chrono::offset::Utc::now().naive_utc(),
                         stats: stats,
                         application_name: String::new(),
+                        search_path: search_path.to_string(),
                     };
 
                     server.set_name("pgcat").await?;
@@ -542,7 +547,6 @@ impl Server {
     }
 
     /// A shorthand for `SET application_name = $1`.
-    #[allow(dead_code)]
     pub async fn set_name(&mut self, name: &str) -> Result<(), Error> {
         if self.application_name != name {
             self.application_name = name.to_string();
@@ -552,6 +556,18 @@ impl Server {
         } else {
             Ok(())
         }
+    }
+
+    /// Set the search_path to what it's configured in pgcat.toml.
+    pub async fn reset_search_path(&mut self) -> Result<(), Error> {
+        debug!("Setting search_path to '{}'", self.search_path);
+        self.query(&format!("SET search_path TO {}", self.search_path))
+            .await
+    }
+
+    /// Get configured search path.
+    pub fn search_path(&self) -> &String {
+        &self.search_path
     }
 
     /// Get the servers address.
