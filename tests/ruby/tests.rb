@@ -128,3 +128,23 @@ end
 25.times do
   poorly_behaved_client
 end
+
+
+# Test reader/writer endpoints
+def test_reader_writer_endpoints
+  conn = PG::connect("postgres://sharding_user:sharding_user@127.0.0.1:6432/sharded_db/reader?application_name=testing_pgcat")
+  conn.async_exec 'BEGIN'
+  conn.async_exec 'SELECT 1'
+  conn.async_exec 'COMMIT'
+  conn.close
+
+  conn = PG::connect("postgres://sharding_user:sharding_user@127.0.0.1:6432/sharded_db/writer?application_name=testing_pgcat")
+  conn.async_exec 'BEGIN'
+  conn.async_exec 'SELECT 1'
+  conn.async_exec 'COMMIT'
+  conn.close
+
+  puts 'Reader/Writer clients ok'
+end
+
+test_reader_writer_endpoints
